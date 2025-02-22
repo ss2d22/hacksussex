@@ -80,7 +80,7 @@ deno run --allow-net --allow-read --allow-env index.ts
 1. Navigate to the extension directory:
 
 ```
-cd brextension
+cd browser-extension
 ```
 
 2. Install dependencies:
