@@ -162,7 +162,7 @@ export default function Home() {
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-primary">
-          Misinformation Dashboard
+          Blue Sentry Dashboard
         </h1>
         <UserButton />
       </div>
