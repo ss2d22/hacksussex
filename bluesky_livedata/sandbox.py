@@ -75,52 +75,6 @@ class SlidingWindowLeaderboard:
         return out
 
 
-# kw_extractor = yake.KeywordExtractor()
-# window = SlidingWindowLeaderboard(1000)
-#
-#
-# async def stream():
-#     async with connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post") as websocket:
-#         queue = []
-#         while True:
-#             message = await websocket.recv()
-#             json_message = json.loads(message)
-#             try:
-#                 text = json_message["commit"]["record"]["text"]
-#                 if len(text) < 20: continue
-#                 alphas = 0
-#                 for i in text:
-#                     if i.lower() in "abcdefghijklmnopqrstuvwxyz":
-#                         alphas += 1
-#                 if alphas/len(text) < 0.8:
-#                     continue
-#
-#                 queue.append(text)
-#
-#                 if len(queue) > 10:
-#                     for i in range(10):
-#                         text = queue[i]
-#                         kws = kw_extractor.extract_keywords(text)
-#                         kws = [kw[0] for kw in kws][:3]
-#                         for kw in kws:
-#                             window.append(kw, text)
-#
-#                     os.system("clear")
-#                     print(window)
-#                     queue = []
-#
-#             except KeyError:
-#                 pass
-#             # print("get message from tag")
-#             # query = input("enter query: ").strip()
-#             # if query:
-#             #     print("hohouh")
-#             #     print(window.get_keyword_tweets(query))
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(stream())
-
 
 kw_extractor = yake.KeywordExtractor(n=1)
 window = SlidingWindowLeaderboard(300)
