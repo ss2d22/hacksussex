@@ -1,6 +1,6 @@
 <div align="center">
   <h1>🚀 HackSussex</h1>
-  <p>A hackathon project to classify hate speech using AI, featuring a browser extension, backend server, and user authentication.</p>
+  <p>A hackathon project to classify hate speech using AI, featuring a dashboard website, backend server, and user authentication.</p>
 
   <div>
     <img src="https://img.shields.io/badge/-TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow" />
@@ -9,16 +9,16 @@
     <img src="https://img.shields.io/badge/-Oak-009688?style=for-the-badge&logo=oak&logoColor=white" alt="Oak" />
     <img src="https://img.shields.io/badge/-Clerk-3B82F6?style=for-the-badge&logo=clerk&logoColor=white" alt="Clerk" />
     <img src="https://img.shields.io/badge/-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
-    <img src="https://img.shields.io/badge/-Plasma-7B61FF?style=for-the-badge&logo=plasma&logoColor=white" alt="Plasma" />
     <img src="https://img.shields.io/badge/-Podman-892CA0?style=for-the-badge&logo=podman&logoColor=white" alt="Podman" />
   </div>
 </div>
+
 ## 📚 About
 
 HackSussex is a hackathon project aimed at detecting and classifying hate speech using AI. The project consists of:
 
 - **A TensorFlow-based AI model** trained to classify hate speech, served via Hugging Face.
-- **A browser extension (built with Plasma)** that flags harmful content in real time.
+- **A dashboard website (built with Vite and React)** that shows top 10 trending hashtags on Bluesky filled with misinformation.
 - **A backend server (using Deno and Oak)** for authentication, user management, and AI inference.
 - **User authentication** powered by Clerk.
 - **API documentation** following OpenAPI 3.0 standards.
@@ -26,7 +26,7 @@ HackSussex is a hackathon project aimed at detecting and classifying hate speech
 ## 🌟 Features
 
 - 🎯 AI-powered hate speech classification using TensorFlow & Hugging Face
-- 🔥 Real-time browser extension to detect and flag harmful content
+- 🔥 Real-time dashboard to view and filter harmful content
 - 🌍 Server backend with Deno & Oak for authentication and AI inference
 - 🔒 Secure user authentication with Clerk
 - 🌚 Fully documented API with Swagger (OpenAPI 3.0)
@@ -35,7 +35,7 @@ HackSussex is a hackathon project aimed at detecting and classifying hate speech
 ## 🛠️ Technologies
 
 - **AI Model**: TensorFlow, Hugging Face
-- **Browser Extension**: Plasma
+- **Dashboard**: Vite, React
 - **Backend**: Deno, Oak
 - **Authentication**: Clerk
 - **API Documentation**: Swagger, OpenAPI 3.0
@@ -49,8 +49,25 @@ HackSussex is a hackathon project aimed at detecting and classifying hate speech
 git clone https://github.com/ss2d22/hacksussex.git
 cd hacksussex
 ```
+### Python Server Setup
+1. Navigate to the bluesky_livedata directory:
+```
+cd bludsky_livedata
+```
+2. Initialize conda environment:
+```
+conda env create -f bluesky.yml
+```
+3. Set environment variable:
+```
+export GEMINI_API_KEY="<your gemini api key>"
+```
+4. Run the server:
+```
+python sandbox.py
+```
 
-### Backend Setup
+### Deno Server Setup
 
 server tbd
 
@@ -74,28 +91,6 @@ CLERK_API_KEY=your_clerk_api_key
 ```
 deno run --allow-net --allow-read --allow-env index.ts
 ```
-
-### Browser Extension Setup
-
-1. Navigate to the extension directory:
-
-```
-cd browser-extension
-```
-
-2. Install dependencies:
-
-```
-pnpm install
-```
-
-3. Build and load the extension:
-
-```
-pnpm build
-```
-
-Then load the extension manually in your browser's developer mode.
 
 ### Running with Podman
 
