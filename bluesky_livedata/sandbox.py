@@ -1,5 +1,4 @@
 import asyncio
-import websockets
 import json
 import yake
 from collections import defaultdict
@@ -7,6 +6,11 @@ import os
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from keybert import KeyBERT
+import websockets
+from fastapi import FastAPI, WebSocket
+from fastapi.responses import JSONResponse
+import uvicorn
+
 
 class SlidingWindowLeaderboard:
     def __init__(self, size):
@@ -46,21 +50,21 @@ class SlidingWindowLeaderboard:
         return sorted(self.counts.items(), key=lambda x: x[1][0], reverse=True)
 
     def to_json(self):
-        return json.dumps({item: count[0] for item, count in self.getleaderboard()[:50]})
+        return {item: count[0] for item, count in self.getleaderboard()[:50]}
 
+app = FastAPI()  # FastAPI REST Server
 kw_extractor = yake.KeywordExtractor(n=1)
 window = SlidingWindowLeaderboard(300)
 queue = asyncio.Queue()
 model = KeyBERT('distilbert-base-nli-mean-tokens')
-
-# Store connected WebSocket clients
-connected_clients = set()
+connected_clients = set()  # WebSocket clients
 
 async def fetch_data():
     async with websockets.connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post") as websocket:
         while True:
             message = await websocket.recv()
-            await queue.put(message)
+            await queue.put(message)  # Add to processing queue
+
 
 async def process_data():
     while True:
@@ -79,32 +83,49 @@ async def process_data():
             for kw in kws:
                 window.append(kw[0], text, kw[1])
 
-            # Broadcast leaderboard update
-            leaderboard_json = window.to_json()
-            await broadcast(leaderboard_json)
+            # Broadcast filtered message to WebSocket clients
+            await broadcast(json.dumps({"message": text}))
 
         except KeyError:
             pass
         finally:
             queue.task_done()
 
-async def broadcast(message):
-    if connected_clients:
-        await asyncio.gather(*(client.send(message) for client in connected_clients))
 
-async def leaderboard_server(websocket):
+async def broadcast(message):
+    """Sends a message to all connected WebSocket clients."""
+    if connected_clients:
+        await asyncio.gather(*(client.send_text(message) for client in connected_clients))
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint that streams filtered messages."""
+    await websocket.accept()
     connected_clients.add(websocket)
     try:
         while True:
-            await websocket.recv()  # Keep connection open
-    except websockets.exceptions.ConnectionClosed:
+            await websocket.receive_text()  # Keep connection open
+    except:
         pass
     finally:
         connected_clients.remove(websocket)
 
+
+@app.get("/leaderboard")
+async def get_leaderboard():
+    """REST API to fetch the leaderboard."""
+    return JSONResponse(content=window.to_json())
+
+
+async def start_server():
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000)
+    server = uvicorn.Server(config)
+    await server.serve()
+
 async def main():
-    server = websockets.serve(leaderboard_server, "localhost", 8765)
-    await asyncio.gather(fetch_data(), process_data(), server)
+    """Run both WebSocket server and data processing."""
+    await asyncio.gather(start_server(), fetch_data(), process_data())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main())  # Properly run all tasks
