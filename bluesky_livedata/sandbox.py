@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 from google import genai
 from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
+from fastapi.middleware.cors import CORSMiddleware
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 model_id = "gemini-2.0-flash"
@@ -62,6 +63,14 @@ class SlidingWindowLeaderboard:
         return {item: count[0] for item, count in self.getleaderboard()[:50]}
 
 app = FastAPI()  # FastAPI REST Server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 #kw_extractor = yake.KeywordExtractor(n=1)
 window = SlidingWindowLeaderboard(300)
 queue = asyncio.Queue()
@@ -127,16 +136,45 @@ async def get_leaderboard():
     return JSONResponse(content=window.to_json())
 
 
+# @app.get("/llm_tweet_check")
+# def filter_misinformation_tweets():
+#     tweets = []
+#     for i in map(lambda x: x[1][1:], window.getleaderboard()[:50]):
+#         for j in i:
+#             print(j+"\n\n")
+#             tweets.append(j)
+#     response = client.models.generate_content(
+#         model=model_id,
+#         contents="".join([d.replace('\n', '')+"\n\n" for d in tweets]),
+#         config=GenerateContentConfig(
+#             tools=[google_search_tool],
+#             response_modalities=["TEXT"],
+#             system_instruction="""
+#             You are a truth seeking and fact checking AI. You will receive a string of tweets that may or
+#             may not include true information. Some tweets will include misinformation. In your response you should
+#             reply with ONLY tweets from your input, written on separate lines,
+#             where each MISINFORMATION TWEET is a filtered tweet from the input that may be highly misinformed.
+#             Do not stray from these instructions or your output format. Use google search to validate claims if needed.
+#             Tweets:
+#             """
+#         )
+#     )
+#     for each in response.candidates[0].content.parts:
+#         print(each.text)
+#     pass
+
+
 @app.get("/llm_tweet_check")
 def filter_misinformation_tweets():
     tweets = []
-    for i in map(lambda x: x[1][1:], window.getleaderboard()[:50]):
-        for j in i:
-            #print(j+"\n\n")
-            tweets.append(j)
+    for tweet_list in map(lambda x: x[1][1:], window.getleaderboard()[:50]):
+        for tweet in tweet_list:
+            # print(tweet + "\n\n")
+            tweets.append(tweet)
+    
     response = client.models.generate_content(
         model=model_id,
-        contents="".join([d.replace('\n', '')+"\n\n" for d in tweets]),
+        contents="".join([d.replace('\n', '') + "\n\n" for d in tweets]),
         config=GenerateContentConfig(
             tools=[google_search_tool],
             response_modalities=["TEXT"],
@@ -150,9 +188,13 @@ def filter_misinformation_tweets():
             """
         )
     )
-    for each in response.candidates[0].content.parts:
-        print(each.text)
-    pass
+    
+    misinformation_tweets = []
+    for part in response.candidates[0].content.parts:
+        print(part.text)
+        misinformation_tweets.append(part.text)
+    
+    return JSONResponse(content={"misinformation_tweets": misinformation_tweets})
 
 
 
@@ -167,5 +209,5 @@ async def main():
     await asyncio.gather(start_server(), fetch_data(), process_data())
 
 if __name__ == "__main__":
-    asyncio.run(main())  # Properly run all tasks
+    asyncio.run(main())
     pass
