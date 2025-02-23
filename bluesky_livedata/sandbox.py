@@ -241,6 +241,21 @@ def filter_misinformation_tweets():
         print(each.text)
     pass
 
+@app.get("/category-list")
+def get_category_list():
+    """Returns the top 10 hashtags along with an associated misinformation tweet for each topic."""
+    categories = []
+    leaderboard = window.getleaderboard()[:10] 
+    
+    for item, data in leaderboard:
+        misinformation_tweets = data[1:] 
+        if misinformation_tweets:
+            categories.append({
+                "hashtag": item,
+                "misinformation_tweet": misinformation_tweets
+            })
+    
+    return JSONResponse(content={"categories": categories})
 
 
 async def start_server():
