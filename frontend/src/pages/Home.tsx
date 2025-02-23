@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { UserButton } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   BarChart,
   Bar,
@@ -35,14 +38,19 @@ interface CategoryData {
   misinformation_tweet: string[];
 }
 
+const MAX_TWEETS = 100;
+
 export default function Home() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData>({});
   const [misinformationTweets, setMisinformationTweets] = useState<string[]>(
     []
   );
+  const [filteredTweets, setFilteredTweets] = useState<string[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [isKeywordFilterEnabled, setIsKeywordFilterEnabled] = useState(false);
 
   const fetchLeaderboardData = async () => {
     const response = await fetch("http://localhost:8000/leaderboard");
@@ -71,7 +79,7 @@ export default function Home() {
       ]);
 
       setLeaderboardData(leaderboard);
-      setMisinformationTweets(tweets);
+      updateTweets(tweets);
       setCategoryData(categories);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -79,26 +87,58 @@ export default function Home() {
     setIsLoading(false);
   };
 
+  const updateTweets = useCallback(
+    (newTweets: string[]) => {
+      setMisinformationTweets((prevTweets) => {
+        const updatedTweets = [...newTweets, ...prevTweets];
+        return updatedTweets.slice(0, MAX_TWEETS);
+      });
+
+      if (isKeywordFilterEnabled) {
+        setFilteredTweets((prevFiltered) => {
+          const newFilteredTweets = newTweets.filter((tweet) =>
+            tweet.toLowerCase().includes(keyword.toLowerCase())
+          );
+          const updatedFiltered = [...newFilteredTweets, ...prevFiltered];
+          return updatedFiltered.slice(0, MAX_TWEETS);
+        });
+      }
+    },
+    [isKeywordFilterEnabled, keyword]
+  );
+
   useEffect(() => {
     fetchAllData();
 
     const intervalId = setInterval(() => {
-      fetchMisinformationTweets().then(setMisinformationTweets);
+      fetchMisinformationTweets().then(updateTweets);
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [updateTweets]);
+
+  useEffect(() => {
+    if (isKeywordFilterEnabled) {
+      setFilteredTweets(
+        misinformationTweets
+          .filter((tweet) =>
+            tweet.toLowerCase().includes(keyword.toLowerCase())
+          )
+          .slice(0, MAX_TWEETS)
+      );
+    } else {
+      setFilteredTweets([]);
+    }
+  }, [isKeywordFilterEnabled, keyword, misinformationTweets]);
 
   const leaderboardChartData = Object.entries(leaderboardData)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([name, value]) => ({ name, value }));
 
-  const filteredTweets =
-    selectedCategory === "all"
-      ? categoryData.flatMap((category) => category.misinformation_tweet)
-      : categoryData.find((category) => category.hashtag === selectedCategory)
-          ?.misinformation_tweet || [];
+  const displayedTweets = isKeywordFilterEnabled
+    ? filteredTweets
+    : misinformationTweets;
 
   return (
     <div className="container mx-auto p-4">
@@ -138,11 +178,27 @@ export default function Home() {
             <CardTitle>Recent Misinformation Tweets</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center space-x-2 mb-4">
+              <Input
+                type="text"
+                placeholder="Filter keyword"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+              />
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="keyword-filter"
+                  checked={isKeywordFilterEnabled}
+                  onCheckedChange={setIsKeywordFilterEnabled}
+                />
+                <Label htmlFor="keyword-filter">Enable filter</Label>
+              </div>
+            </div>
             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-              {misinformationTweets.map((tweet, index) => (
+              {displayedTweets.map((tweet, index) => (
                 <div key={index}>
                   <p className="text-sm">{tweet}</p>
-                  {index < misinformationTweets.length - 1 && (
+                  {index < displayedTweets.length - 1 && (
                     <Separator className="my-2" />
                   )}
                 </div>
@@ -170,24 +226,25 @@ export default function Home() {
             </SelectContent>
           </Select>
           <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-            {filteredTweets.map((tweet, index) => (
-              <div key={index}>
-                <p className="text-sm">
-                  <span className="font-bold text-primary">
-                    #
-                    {selectedCategory === "all"
-                      ? categoryData.find((c) =>
-                          c.misinformation_tweet.includes(tweet)
-                        )?.hashtag
-                      : selectedCategory}
-                  </span>{" "}
-                  {tweet}
-                </p>
-                {index < filteredTweets.length - 1 && (
-                  <Separator className="my-2" />
-                )}
-              </div>
-            ))}
+            {categoryData
+              .filter(
+                (category) =>
+                  selectedCategory === "all" ||
+                  category.hashtag === selectedCategory
+              )
+              .flatMap((category) =>
+                category.misinformation_tweet.map((tweet, tweetIndex) => (
+                  <div key={`${category.hashtag}-${tweetIndex}`}>
+                    <p className="text-sm">
+                      <span className="font-bold text-primary">
+                        #{category.hashtag}
+                      </span>{" "}
+                      {tweet}
+                    </p>
+                    <Separator className="my-2" />
+                  </div>
+                ))
+              )}
           </ScrollArea>
         </CardContent>
       </Card>
