@@ -76,6 +76,8 @@ window = SlidingWindowLeaderboard(300)
 queue = asyncio.Queue()
 kw_extractor = KeyBERT('distilbert-base-nli-mean-tokens')
 connected_clients = set()  # WebSocket clients
+ws_filter = ""
+sentence_similarity = SentenceTransformer("sentence-transformers/paraphrase-MiniLM-L3-v2")
 
 async def fetch_data():
     async with websockets.connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post") as websocket:
@@ -97,10 +99,20 @@ async def process_data():
             if alphas / len(text) < 0.8:
                 continue
 
-            kws = kw_extractor.extract_keywords(text)[:1]
-            for kw in kws:
+            kws = kw_extractor.extract_keywords(text)
+            for kw in kws[:1]:
                 window.append(kw[0], text, kw[1])
 
+            if ws_filter:
+                wskws = " ".join(d[0] for d in kw_extractor.extract_keywords(ws_filter))
+
+
+                emb = [sentence_similarity.encode(" ".join(d[0] for d in kws))]
+                emb_filter = [sentence_similarity.encode(wskws)]
+                if cosine_similarity(emb, emb_filter)[0][0] < 0.3:
+                    continue
+
+            print(text)
             # Broadcast filtered message to WebSocket clients
             await broadcast(json.dumps({"message": text}))
 
@@ -196,6 +208,38 @@ def filter_misinformation_tweets():
     
     return JSONResponse(content={"misinformation_tweets": misinformation_tweets})
 
+
+@app.get("/apply_ws_filter/{filter}")
+def apply_ws_filter(filter: str):
+    global ws_filter
+    ws_filter = filter.lower()
+
+@app.get("/llm_tweet_check")
+def filter_misinformation_tweets():
+    tweets = []
+    for i in map(lambda x: x[1][1:], window.getleaderboard()[:50]):
+        for j in i:
+            #print(j+"\n\n")
+            tweets.append(j)
+    response = client.models.generate_content(
+        model=model_id,
+        contents="".join([d.replace('\n', '')+"\n\n" for d in tweets]),
+        config=GenerateContentConfig(
+            tools=[google_search_tool],
+            response_modalities=["TEXT"],
+            system_instruction="""
+            You are a truth seeking and fact checking AI. You will receive a string of tweets that may or
+            may not include true information. Some tweets will include misinformation. In your response you should
+            reply with ONLY tweets from your input, written on separate lines,
+            where each MISINFORMATION TWEET is a filtered tweet from the input that may be highly misinformed.
+            Do not stray from these instructions or your output format. Use google search to validate claims if needed.
+            Tweets:
+            """
+        )
+    )
+    for each in response.candidates[0].content.parts:
+        print(each.text)
+    pass
 
 
 
