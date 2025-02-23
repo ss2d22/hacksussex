@@ -6,20 +6,20 @@
     <img src="https://img.shields.io/badge/-TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow" />
     <img src="https://img.shields.io/badge/-Hugging_Face-FED74A?style=for-the-badge&logo=huggingface&logoColor=black" alt="Hugging Face" />
     <img src="https://img.shields.io/badge/-Deno-000000?style=for-the-badge&logo=deno&logoColor=white" alt="Deno" />
-    <img src="https://img.shields.io/badge/-Express-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
+    <img src="https://img.shields.io/badge/-Oak-009688?style=for-the-badge&logo=oak&logoColor=white" alt="Oak" />
     <img src="https://img.shields.io/badge/-Clerk-3B82F6?style=for-the-badge&logo=clerk&logoColor=white" alt="Clerk" />
     <img src="https://img.shields.io/badge/-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
     <img src="https://img.shields.io/badge/-Plasma-7B61FF?style=for-the-badge&logo=plasma&logoColor=white" alt="Plasma" />
     <img src="https://img.shields.io/badge/-Podman-892CA0?style=for-the-badge&logo=podman&logoColor=white" alt="Podman" />
   </div>
 </div>
-
-## 📖 About
+## 📚 About
 
 HackSussex is a hackathon project aimed at detecting and classifying hate speech using AI. The project consists of:
-- **A TensorFlow-based AI model** trained to classify hate speech, served through the backend.
+
+- **A TensorFlow-based AI model** trained to classify hate speech, served via Hugging Face.
 - **A browser extension (built with Plasma)** that flags harmful content in real time.
-- **A backend server (using Deno 2.0 and Express)** for authentication, user management, and serving the AI model using Hugging Face inference.
+- **A backend server (using Deno and Oak)** for authentication, user management, and AI inference.
 - **User authentication** powered by Clerk.
 - **API documentation** following OpenAPI 3.0 standards.
 
@@ -27,16 +27,16 @@ HackSussex is a hackathon project aimed at detecting and classifying hate speech
 
 - 🎯 AI-powered hate speech classification using TensorFlow & Hugging Face
 - 🔥 Real-time browser extension to detect and flag harmful content
-- 🌍 Server backend with Deno 2.0 & Express for authentication and AI inference
-- 🔐 Secure user authentication with Clerk
-- 📜 Fully documented API with Swagger (OpenAPI 3.0)
-- 🛠️ Containerized deployment with Podman
+- 🌍 Server backend with Deno & Oak for authentication and AI inference
+- 🔒 Secure user authentication with Clerk
+- 🌚 Fully documented API with Swagger (OpenAPI 3.0)
+- 🐻 Containerized deployment with Podman
 
 ## 🛠️ Technologies
 
 - **AI Model**: TensorFlow, Hugging Face
 - **Browser Extension**: Plasma
-- **Backend**: Deno 2.0, Express
+- **Backend**: Deno, Oak
 - **Authentication**: Clerk
 - **API Documentation**: Swagger, OpenAPI 3.0
 - **Containerization**: Podman
@@ -120,4 +120,3 @@ For any queries or suggestions, please open an issue in this repository or reach
 <div align="center">
 Made with ❤️ at HackSussex
 </div>
-
