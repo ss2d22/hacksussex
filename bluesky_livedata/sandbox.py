@@ -10,6 +10,15 @@ import websockets
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import JSONResponse
 import uvicorn
+from google import genai
+from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
+
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+model_id = "gemini-2.0-flash"
+
+google_search_tool = Tool(
+    google_search = GoogleSearch()
+)
 
 
 class SlidingWindowLeaderboard:
@@ -53,10 +62,10 @@ class SlidingWindowLeaderboard:
         return {item: count[0] for item, count in self.getleaderboard()[:50]}
 
 app = FastAPI()  # FastAPI REST Server
-kw_extractor = yake.KeywordExtractor(n=1)
+#kw_extractor = yake.KeywordExtractor(n=1)
 window = SlidingWindowLeaderboard(300)
 queue = asyncio.Queue()
-model = KeyBERT('distilbert-base-nli-mean-tokens')
+kw_extractor = KeyBERT('distilbert-base-nli-mean-tokens')
 connected_clients = set()  # WebSocket clients
 
 async def fetch_data():
@@ -79,7 +88,7 @@ async def process_data():
             if alphas / len(text) < 0.8:
                 continue
 
-            kws = model.extract_keywords(text)[:1]
+            kws = kw_extractor.extract_keywords(text)[:1]
             for kw in kws:
                 window.append(kw[0], text, kw[1])
 
@@ -118,6 +127,36 @@ async def get_leaderboard():
     return JSONResponse(content=window.to_json())
 
 
+@app.get("/llm_tweet_check")
+def filter_misinformation_tweets():
+    tweets = []
+    for i in map(lambda x: x[1][1:], window.getleaderboard()[:50]):
+        for j in i:
+            #print(j+"\n\n")
+            tweets.append(j)
+    response = client.models.generate_content(
+        model=model_id,
+        contents="".join([d.replace('\n', '')+"\n\n" for d in tweets]),
+        config=GenerateContentConfig(
+            tools=[google_search_tool],
+            response_modalities=["TEXT"],
+            system_instruction="""
+            You are a truth seeking and fact checking AI. You will receive a string of tweets that may or
+            may not include true information. Some tweets will include misinformation. In your response you should
+            reply with ONLY tweets from your input, written on separate lines,
+            where each MISINFORMATION TWEET is a filtered tweet from the input that may be highly misinformed.
+            Do not stray from these instructions or your output format. Use google search to validate claims if needed.
+            Tweets:
+            """
+        )
+    )
+    for each in response.candidates[0].content.parts:
+        print(each.text)
+    pass
+
+
+
+
 async def start_server():
     config = uvicorn.Config(app, host="0.0.0.0", port=8000)
     server = uvicorn.Server(config)
@@ -129,3 +168,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())  # Properly run all tasks
+    pass
